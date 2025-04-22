@@ -1,2 +1,19 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+ <uses-permission android:name="android.permission.USB_PERMISSION" />
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+    <uses-feature android:name="android.hardware.usb.host" android:required="false" />
+    <uses-feature android:name="android.hardware.bluetooth" android:required="false" />
+       <uses-permission android:name="com.serialweightscale.USB_PERMISSION" />
+        <permission
+            android:name="com.serialweightscale.USB_PERMISSION"
+            android:protectionLevel="normal" />
+    <application>
+ 
+        <meta-data
+            android:name="com.facebook.react.module.SerialWeightScaleModule"
+            android:value="com.serialweightscale.SerialWeightScaleModule" />
+    </application>
 </manifest>

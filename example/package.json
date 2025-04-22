@@ -11,7 +11,8 @@
   },
   "dependencies": {
     "react": "19.0.0",
-    "react-native": "0.78.2"
+    "react-native": "0.78.2",
+    "react-native-serial-weight-scale-example": "file:"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

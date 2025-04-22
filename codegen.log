@@ -1,0 +1,8 @@
+[36m[1m[Codegen][0m Analyzing F:\projects\libs\react-native-serial-weight-scale\package.json[0m
+[36m[1m[Codegen][0m [33mSearching for codegen-enabled libraries in the app.[0m
+[36m[1m[Codegen][0m Found react-native-serial-weight-scale[0m
+[36m[1m[Codegen][0m Processing RNSerialWeightScaleSpec[0m
+[36m[1m[Codegen][0m [33mSearching for podspec in the project dependencies.[0m
+[36m[1m[Codegen][0m Supported Apple platforms: ios for RNSerialWeightScaleSpec[0m
+[36m[1m[Codegen][0m UnsupportedFunctionParamTypeAnnotationParserError: Module NativeSerialWeightScale: Function parameter 'promise' cannot have type 'PromiseTypeAnnotation'.[0m
+[36m[1m[Codegen][0m [33mDone.[0m

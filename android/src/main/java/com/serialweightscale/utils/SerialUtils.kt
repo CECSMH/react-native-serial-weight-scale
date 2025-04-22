@@ -3,11 +3,15 @@ package com.serialweightscale.utils
 
 import android.content.Context
 import android.hardware.usb.UsbManager
+import android.app.PendingIntent
+import android.content.Intent
+import android.hardware.usb.UsbDevice
 import com.hoho.android.usbserial.driver.UsbSerialDriver
 import com.hoho.android.usbserial.driver.UsbSerialPort
 import com.hoho.android.usbserial.driver.UsbSerialProber
 import com.serialweightscale.exceptions.SerialConnectionException
 import java.nio.charset.StandardCharsets
+import com.serialweightscale.utils.Logger
 
 data class SerialPort(val driver: UsbSerialDriver, val port: UsbSerialPort) {
     val isOpen: Boolean get() = port.isOpen
@@ -44,7 +48,11 @@ data class Config(
 }
 
 object SerialUtils {
-    fun listDevices(context: Context): List<Device> {
+    private const val ACTION_USB_PERMISSION = "com.serialweightscale.USB_PERMISSION"
+
+
+    fun listDevices(): List<Device> {
+        val context = ContextHolder.getContext()?: throw SerialConnectionException("Context unavailable")
         val usbManager = context.getSystemService(Context.USB_SERVICE) as UsbManager
         val availableDrivers = UsbSerialProber.getDefaultProber().findAllDrivers(usbManager)
         return availableDrivers.mapIndexed { index, driver ->
@@ -58,35 +66,63 @@ object SerialUtils {
         }
     }
 
-    fun openPort(port: String, baudRate: Int, dataBits: Int, parity: String, stopBits: Int): SerialPort {
-        val context = ContextHolder.getContext()
-            ?: throw SerialConnectionException("Context unavailable")
+    fun hasPermission(device: UsbDevice): Boolean {
+        val context = ContextHolder.getContext()?: throw SerialConnectionException("Context unavailable")
         val usbManager = context.getSystemService(Context.USB_SERVICE) as UsbManager
-        val availableDrivers = UsbSerialProber.getDefaultProber().findAllDrivers(usbManager)
-        val driver = availableDrivers.find { it.device.deviceName.contains(port) }
-            ?: throw SerialConnectionException("Device not found: $port")
-        if (!usbManager.hasPermission(driver.device)) {
-            throw SerialConnectionException("No permission for device: $port")
-        }
-        val serialPort = driver.ports[0]
-        serialPort.open(usbManager.openDevice(driver.device))
-        serialPort.setParameters(
-            baudRate,
-            dataBits,
-            when (stopBits) {
-                1 -> UsbSerialPort.STOPBITS_1
-                2 -> UsbSerialPort.STOPBITS_2
-                else -> throw IllegalArgumentException("Invalid stopBits: $stopBits")
-            },
-            when (parity.lowercase()) {
-                "none" -> UsbSerialPort.PARITY_NONE
-                "even" -> UsbSerialPort.PARITY_EVEN
-                "odd" -> UsbSerialPort.PARITY_ODD
-                else -> throw IllegalArgumentException("Invalid parity: $parity")
-            }
-        )
-        return SerialPort(driver, serialPort)
+        return usbManager.hasPermission(device)
     }
+
+    fun requestPermission(device: UsbDevice) {
+        val context = ContextHolder.getContext()?: throw SerialConnectionException("Context unavailable")
+        val usbManager = context.getSystemService(Context.USB_SERVICE) as UsbManager
+        val permissionIntent = PendingIntent.getBroadcast(
+            context,
+            0,
+            Intent(ACTION_USB_PERMISSION),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        usbManager.requestPermission(device, permissionIntent)
+    }
+
+    fun openPort(port: String, baudRate: Int, dataBits: Int, parity: String, stopBits: Int): SerialPort {
+    val context = ContextHolder.getContext()?: throw SerialConnectionException("Context unavailable")
+
+    val usbManager = context.getSystemService(Context.USB_SERVICE) as UsbManager
+    val availableDrivers = UsbSerialProber.getDefaultProber().findAllDrivers(usbManager)
+    val driver = availableDrivers.find { it.device.deviceName.contains(port) } ?: throw SerialConnectionException("Device not found: $port")
+Logger.log("teste ################################")
+
+    val device = driver.device
+
+    // Request permission if not granted
+    if (!usbManager.hasPermission(device)) {
+        
+        SerialUtils.requestPermission(device)
+        throw SerialConnectionException("USB permission required for device: $port")
+    }
+
+    val serialPort = driver.ports[0]
+    serialPort.open(usbManager.openDevice(device))
+
+    serialPort.setParameters(
+        baudRate,
+        dataBits,
+        when (stopBits) {
+            1 -> UsbSerialPort.STOPBITS_1
+            2 -> UsbSerialPort.STOPBITS_2
+            else -> throw IllegalArgumentException("Invalid stopBits: $stopBits")
+        },
+        when (parity.lowercase()) {
+            "none" -> UsbSerialPort.PARITY_NONE
+            "even" -> UsbSerialPort.PARITY_EVEN
+            "odd" -> UsbSerialPort.PARITY_ODD
+            else -> throw IllegalArgumentException("Invalid parity: $parity")
+        }
+    )
+
+    return SerialPort(driver, serialPort)
+}
 
     fun send(port: SerialPort, command: String) {
         if (!port.isOpen) throw SerialConnectionException("Port not open")

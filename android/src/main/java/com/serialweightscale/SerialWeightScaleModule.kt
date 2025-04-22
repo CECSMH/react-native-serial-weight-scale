@@ -17,11 +17,16 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
     private val monitoringJobs = ConcurrentHashMap<String, Job>()
     private val coroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
+
+    init {
+        ContextHolder.setContext(reactApplicationContext)
+    }
+
     override fun getName(): String = NAME
 
     override fun listDevices(promise: Promise) {
         try {
-            val devices = SerialUtils.listDevices(reactApplicationContext)
+            val devices = SerialUtils.listDevices()
             val deviceArray = Arguments.createArray()
             devices.forEach { device ->
                 deviceArray.pushMap(Arguments.createMap().apply {
@@ -41,8 +46,10 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
     override fun connect(scaleId: String, configMap: ReadableMap, promise: Promise) {
         try {
             val config = Config.fromMap(configMap)
+          
             val handler = HandlerFactory.create(config.brand, config.model)
-            handler.connect(config)
+             Logger.log("Teste")
+            handler.connect(config) 
             handlers[scaleId] = handler
             promise.resolve(null)
         } catch (e: ScaleException) {

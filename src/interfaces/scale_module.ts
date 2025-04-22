@@ -1,7 +1,7 @@
-import { NativeModules, NativeEventEmitter } from 'react-native';
+import { NativeEventEmitter } from 'react-native';
 import type { Config, Device, ScaleResult } from './types';
-
-const ScaleModule = NativeModules.ScaleModule;
+import SerialWeightScale from "../NativeSerialWeightScale";
+const ScaleModule = SerialWeightScale as any;
 const eventEmitter = new NativeEventEmitter(ScaleModule);
 
 export default {

@@ -16,6 +16,12 @@ class SerialWeightScalePackage : BaseReactPackage() {
     }
   }
 
+ override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> {
+        return listOf(SerialWeightScaleModule(reactContext))
+    }
+
+
+
   override fun getReactModuleInfoProvider(): ReactModuleInfoProvider {
     return ReactModuleInfoProvider {
       val moduleInfos: MutableMap<String, ReactModuleInfo> = HashMap()

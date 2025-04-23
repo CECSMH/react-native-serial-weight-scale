@@ -1,6 +1,5 @@
 import type { TurboModule } from 'react-native';
 import { TurboModuleRegistry } from 'react-native';
-
 export interface Spec extends TurboModule {
   listDevices(): Promise<Array<{
     name: string,
@@ -9,8 +8,9 @@ export interface Spec extends TurboModule {
     port: string,
     hasPermission: boolean
   }>>;
+
   connect(
-    scaleId: string,
+    productId: number,
     config: {
       port: string,
       baudRate: number,
@@ -23,10 +23,15 @@ export interface Spec extends TurboModule {
       model?: string
     }
   ): Promise<void>;
-  readWeight(scaleId: string): Promise<{ weight: number }>;
-  startMonitoringWeight(scaleId: string): Promise<void>;
-  stopMonitoringWeight(scaleId: string): Promise<void>;
-  disconnect(scaleId: string): Promise<void>;
+
+  readWeight(productId: number): Promise<{ weight: number }>;
+
+  startMonitoringWeight(productId: number): Promise<void>;
+
+  stopMonitoringWeight(productId: number): Promise<void>;
+
+  disconnect(productId: number): Promise<void>;
+
   disconnectAll(): Promise<void>;
 }
 

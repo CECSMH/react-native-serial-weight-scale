@@ -9,12 +9,12 @@ abstract class BaseHandler(override val brand: String, override val model: Strin
     protected var retries: Int = 0
     val isConnected: Boolean get() = serialPort?.isOpen ?: false
 
-    override fun connect(config: Config) {
+    override fun connect(productId: Int, config: Config) {
         if (isConnected) return
         timeout = config.timeout ?: 500
         retries = config.retries ?: 0
         serialPort = SerialUtils.openPort(
-            config.port,
+            productId,
             config.baudRate,
             config.dataBits,
             config.parity,

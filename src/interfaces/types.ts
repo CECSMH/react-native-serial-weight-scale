@@ -17,18 +17,48 @@ export interface Device {
     hasPermission: boolean;
 }
 
+export enum StopBits {
+    One = 1,
+    OnePointFive = 3,
+    Two = 2
+}
+
+export enum BaudRate {
+    Low = 2400,
+    Medium = 4800,
+    Standard = 9600,
+    High = 115200
+}
+
+export enum DataBits {
+    Five = 5,
+    Six = 6,
+    Seven = 7,
+    Eight = 8
+}
+
+export enum Parity {
+    None = "none",
+    Even = "even",
+    Odd = "odd"
+}
+
+export enum Brand {
+    Toledo = "toledo",
+    Filizola = "filizola",
+    Urano = "urano",
+    Micheletti = "micheletti"
+}
+
 export interface Config {
-    brand: 'toledo' | 'filizola' | 'urano' | 'micheletti';
-    model?: string;
-    port: string;
-    baudRate: number;
-    dataBits: number;
-    parity: 'none' | 'even' | 'odd';
-    stopBits: number;
+    brand: Brand; 
+    baudRate: BaudRate;
+    dataBits: DataBits;
+    parity: Parity;
+    stopBits: StopBits;
     timeout?: number;
     retries?: number;
 }
-
 export interface ScaleError {
     type: ErrorType;
     code: number;

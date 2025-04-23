@@ -4,7 +4,29 @@ import com.serialweightscale.exceptions.*
 import com.serialweightscale.utils.*
 
 class UranoHandler(model: String?) : BaseHandler("urano", model ?: "urano") {
-    override fun getCommand(): String = if (model == "uranoudc") Constants.EOT else Constants.ENQ
+    private var _model = model
+    override fun getCommand(): String = if (_model == "uranoudc") Constants.EOT else Constants.ENQ
+
+    override fun connect(productId: Int, config: Config) {
+        if (isConnected) return
+        super.connect(productId, config)
+
+        SerialUtils.send(serialPort!!, Constants.EOT)
+        val eotResponse = SerialUtils.read(serialPort!!, 500)
+        if (!eotResponse.isNullOrEmpty()) {
+            _model = "uranoudc"
+            return
+        }
+
+        SerialUtils.send(serialPort!!, Constants.ENQ)
+        val enqResponse = SerialUtils.read(serialPort!!, 500)
+
+        _model = when {
+            enqResponse.contains("PESO L:") -> "uranopop"
+            enqResponse.contains("PESO:") -> "urano"
+            else -> model ?: "urano"
+        }
+    }
 
     override fun parseResponse(response: String): Double {
         when {

@@ -1,3 +1,5 @@
-export { default as ScaleModule } from './interfaces/scale_module';
+import SerialWeightScale from './serial_weight_scale';
+
+export default SerialWeightScale;
+
 export * from './interfaces/types';
-export * from './utils';

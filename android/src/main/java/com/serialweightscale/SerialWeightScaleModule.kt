@@ -11,12 +11,11 @@ import java.util.concurrent.ConcurrentHashMap
 
 class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSerialWeightScaleSpec(reactContext), TurboModule {
     companion object {
-        const val NAME = "SerialWeightScale"
+        val NAME = "SerialWeightScale"
     }
-    private val handlers = ConcurrentHashMap<String, Handler>()
-    private val monitoringJobs = ConcurrentHashMap<String, Job>()
+    private val handlers = ConcurrentHashMap<Int, Handler>()
+    private val monitoringJobs = ConcurrentHashMap<Int, Job>()
     private val coroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-
 
     init {
         ContextHolder.setContext(reactApplicationContext)
@@ -43,38 +42,40 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
         }
     }
 
-    override fun connect(scaleId: String, configMap: ReadableMap, promise: Promise) {
+    override fun connect(productId: Double, configMap: ReadableMap, promise: Promise) {
         try {
+            val _productId = productId.toInt() 
             val config = Config.fromMap(configMap)
           
             val handler = HandlerFactory.create(config.brand, config.model)
-             Logger.log("Teste")
-            handler.connect(config) 
-            handlers[scaleId] = handler
+            handler.connect(_productId, config) 
+            handlers[_productId] = handler
             promise.resolve(null)
         } catch (e: ScaleException) {
-            promise.reject("SCALE_ERROR", e.toMap())
+            promise.reject(e.getType(), e.message)
         } catch (e: Exception) {
             promise.reject("SERIAL_ERROR", SerialConnectionException("Serial error: ${e.message}", null).toMap())
         }
     }
 
-    override fun readWeight(scaleId: String, promise: Promise) {
+    override fun readWeight(productId: Double, promise: Promise) {
         try {
-            val handler = handlers[scaleId] ?: throw InvalidScaleIdException("Unknown scale ID: $scaleId", null)
+            val _productId = productId.toInt() 
+            val handler = handlers[_productId] ?: throw InvalidScaleIdException("Unknown scale ID: $_productId", null)
             val weight = handler.readWeight()
             promise.resolve(Arguments.createMap().apply { putDouble("weight", weight) })
         } catch (e: ScaleException) {
-            promise.reject("SCALE_ERROR", e.toMap())
+            promise.reject(e.getType(), e.message)
         } catch (e: Exception) {
             promise.reject("SERIAL_ERROR", SerialConnectionException("Serial error: ${e.message}", null).toMap())
         }
     }
 
-    override fun startMonitoringWeight(scaleId: String, promise: Promise) {
+    override fun startMonitoringWeight(productId: Double, promise: Promise) {
         try {
-            val handler = handlers[scaleId] ?: throw InvalidScaleIdException("Unknown scale ID: $scaleId", null)
-            if (monitoringJobs.containsKey(scaleId)) {
+            val _productId = productId.toInt() 
+            val handler = handlers[_productId] ?: throw InvalidScaleIdException("Unknown scale ID: $_productId", null)
+            if (monitoringJobs.containsKey(_productId)) {
                 promise.resolve(null)
                 return
             }
@@ -82,40 +83,44 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
                 try {
                     handler.monitorWeight().forEach { weight: Double ->
                         val resultMap = Arguments.createMap().apply { putDouble("weight", weight) }
-                        emitWeightUpdate(scaleId, resultMap)
+                        emitWeightUpdate(_productId, resultMap)
                     }
                 } catch (e: ScaleException) {
                     val resultMap = Arguments.createMap().apply { putMap("error", e.toMap()) }
-                    emitWeightUpdate(scaleId, resultMap)
+                    emitWeightUpdate(_productId, resultMap)
                 } catch (e: Exception) {
                     val resultMap = Arguments.createMap().apply {
                         putMap("error", SerialConnectionException("Serial error: ${e.message}", null).toMap())
                     }
-                    emitWeightUpdate(scaleId, resultMap)
+                    emitWeightUpdate(_productId, resultMap)
                 }
             }
-            monitoringJobs[scaleId] = job
+            monitoringJobs[_productId] = job
             promise.resolve(null)
         } catch (e: ScaleException) {
-            promise.reject("SCALE_ERROR", e.toMap())
+            promise.reject(e.getType(), e.message)
         } catch (e: Exception) {
             promise.reject("SERIAL_ERROR", SerialConnectionException("Serial error: ${e.message}", null).toMap())
         }
     }
 
-    override fun stopMonitoringWeight(scaleId: String, promise: Promise) {
+    override fun stopMonitoringWeight(productId: Double, promise: Promise) {
         try {
-            monitoringJobs.remove(scaleId)?.cancel()
+            val _productId = productId.toInt() 
+
+            monitoringJobs.remove(_productId)?.cancel()
             promise.resolve(null)
         } catch (e: Exception) {
-            promise.reject("SCALE_ERROR", InvalidScaleIdException("Unknown scale ID: $scaleId", null).toMap())
+            promise.reject("SCALE_ERROR", InvalidScaleIdException("Unknown scale ID: $productId", null).toMap())
         }
     }
 
-    override fun disconnect(scaleId: String, promise: Promise) {
+    override fun disconnect(productId: Double, promise: Promise) {
         try {
-            val handler = handlers.remove(scaleId) ?: throw InvalidScaleIdException("Unknown scale ID: $scaleId", null)
-            monitoringJobs.remove(scaleId)?.cancel()
+            val _productId = productId.toInt() 
+
+            val handler = handlers.remove(_productId) ?: throw InvalidScaleIdException("Unknown scale ID: $_productId", null)
+            monitoringJobs.remove(_productId)?.cancel()
             handler.disconnect()
             promise.resolve(null)
         } catch (e: ScaleException) {
@@ -137,9 +142,9 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
         }
     }
 
-    private fun emitWeightUpdate(scaleId: String, result: WritableMap) {
+    private fun emitWeightUpdate(productId: Int, result: WritableMap) {
         val event = Arguments.createMap().apply {
-            putString("scaleId", scaleId)
+            putInt("productId", productId)
             putMap("result", result)
         }
         reactApplicationContext

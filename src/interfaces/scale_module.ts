@@ -1,6 +1,7 @@
 import { NativeEventEmitter } from 'react-native';
 import type { Config, Device, ScaleResult } from './types';
 import SerialWeightScale from "../NativeSerialWeightScale";
+
 const ScaleModule = SerialWeightScale as any;
 const eventEmitter = new NativeEventEmitter(ScaleModule);
 
@@ -8,26 +9,26 @@ export default {
     listDevices(): Promise<Device[]> {
         return ScaleModule.listDevices();
     },
-    connect(scaleId: string, config: Config): Promise<void> {
-        return ScaleModule.connect(scaleId, config);
+    connect(productId: number, config: Config): Promise<void> {
+        return ScaleModule.connect(productId, config);
     },
-    readWeight(scaleId: string): Promise<ScaleResult> {
-        return ScaleModule.readWeight(scaleId);
+    readWeight(productId: number): Promise<ScaleResult> {
+        return ScaleModule.readWeight(productId);
     },
-    monitorWeight(scaleId: string, callback: (result: ScaleResult) => void): () => void {
-        const listener = eventEmitter.addListener('WeightUpdate', (event: { scaleId: string; result: ScaleResult }) => {
-            if (event.scaleId === scaleId) {
+    monitorWeight(productId: number, callback: (result: ScaleResult) => void): () => void {
+        const listener = eventEmitter.addListener('WeightUpdate', (event: { productId: number; result: ScaleResult }) => {
+            if (event.productId === productId) {
                 callback(event.result);
             }
         });
-        ScaleModule.startMonitoringWeight(scaleId);
+        ScaleModule.startMonitoringWeight(productId);
         return () => {
             listener.remove();
-            ScaleModule.stopMonitoringWeight(scaleId);
+            ScaleModule.stopMonitoringWeight(productId);
         };
     },
-    disconnect(scaleId: string): Promise<void> {
-        return ScaleModule.disconnect(scaleId);
+    disconnect(productId: number): Promise<void> {
+        return ScaleModule.disconnect(productId);
     },
     disconnectAll(): Promise<void> {
         return ScaleModule.disconnectAll();

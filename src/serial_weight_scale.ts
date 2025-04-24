@@ -5,19 +5,38 @@ class SerialWeightScale {
     private productId: number;
     private config: Config;
 
+    /**
+    * Inicializa uma nova instância de SerialWeightScale.
+    *
+    * @param productId - Identificador único da balança.
+    * @param config - Objeto de configuração da porta serial.
+    * @throws {ScaleError} Se a configuração for inválida (por exemplo, marca, taxa de baud ou timeout inválidos).
+    */
     constructor(productId: number, config: Config) {
         this.productId = productId;
-        this.config = this.validateConfig(config)
-    };
+        this.config = this.validateConfig(config);
+    }
 
+    /**
+     * Lista todos os dispositivos de balanças seriais disponíveis.
+     *
+     * @returns 
+     * @throws {ScaleError} Se a listagem de dispositivos falhar (tipo: `serial_connection`).
+     */
     static async listDevices(): Promise<Device[]> {
         try {
             return await scale_module.listDevices();
         } catch (error: any) {
-            throw new ScaleError("serial_connection", `Failed to list devices: ${error.message}`);
+            throw new ScaleError("serial_connection", `Falha ao listar dispositivos: ${error.message}`);
         }
     }
 
+    /**
+     * Estabelece uma conexão com a balança.
+     *
+     * @returns 
+     * @throws {ScaleError} Se a conexão falhar (por exemplo, tipo: `serial_connection`).
+     */
     async connect(): Promise<void> {
         try {
             await scale_module.connect(this.productId, this.config);
@@ -26,6 +45,12 @@ class SerialWeightScale {
         }
     }
 
+    /**
+     * Lê o peso atual da balança.
+     *
+     * @returns
+     * @throws {ScaleError} Se a leitura falhar (por exemplo, tipo: `serial_connection`, `invalid_response`).
+     */
     async readWeight(): Promise<number> {
         try {
             const result: ScaleResult = await scale_module.readWeight(this.productId);
@@ -36,6 +61,12 @@ class SerialWeightScale {
         }
     }
 
+    /**
+     * Desconecta a balança.
+     *
+     * @returns 
+     * @throws {ScaleError} Se a desconexão falhar (tipo: `serial_connection`).
+     */
     async disconnect(): Promise<void> {
         try {
             await scale_module.disconnect(this.productId);
@@ -44,6 +75,13 @@ class SerialWeightScale {
         }
     }
 
+    /**
+     * Monitora alterações de peso e invoca o callback fornecido com cada nova leitura de peso.
+     *
+     * @param callback - Função chamada com o peso mais recente (ou 0 se nenhum peso estiver disponível).
+     * @returns Uma função que, quando chamada, interrompe o monitoramento.
+     * @throws {ScaleError} Se o monitoramento falhar (por exemplo, tipo: `serial_connection`).
+     */
     monitorWeight(callback: (weight: number) => void): () => void {
         try {
             const listener = scale_module.monitorWeight(this.productId, (result: ScaleResult) => {
@@ -56,71 +94,82 @@ class SerialWeightScale {
         }
     }
 
-
+    /**
+     * Converte erros do módulo nativo em instâncias de ScaleError.
+     *
+     * @param error - O objeto de erro do módulo nativo.
+     * @returns Um ScaleError com tipo e mensagem apropriados.
+     * @private
+     */
     private parseNativeError(error: any): ScaleError {
         if (error?.code) {
             return new ScaleError(error.code, error.message);
         }
-        return new ScaleError("serial_connection", `Unexpected error: ${error.message}`);
+        return new ScaleError("serial_connection", `Erro inesperado: ${error.message}`);
     }
 
+    /**
+     * Valida o objeto de configuração, aplicando padrões e garantindo valores válidos.
+     *
+     * @param config - O objeto de configuração a ser validado.
+     * @returns O objeto de configuração validado.
+     * @throws {ScaleError} Se algum campo de configuração for inválido.
+     * @private
+     */
     private validateConfig(config: Config): Config {
         if (!Object.values(Brand).includes(config.brand)) {
-            throw new ScaleError("invalid_scale_id", `Invalid brand: ${config.brand}. Must be one of ${Object.values(Brand).join(", ")}`);
+            throw new ScaleError("invalid_scale_id", `Marca inválida: ${config.brand}. Deve ser uma de ${Object.values(Brand).join(", ")}`);
         }
         if (!Object.values(BaudRate).includes(config.baudRate)) {
-            throw new ScaleError("calibration_error", `Invalid baud rate: ${config.baudRate}. Must be one of ${Object.values(BaudRate).join(", ")}`);
+            throw new ScaleError("calibration_error", `Taxa de baud inválida: ${config.baudRate}. Deve ser uma de ${Object.values(BaudRate).join(", ")}`);
         }
         if (!Object.values(DataBits).includes(config.dataBits)) {
-            throw new ScaleError("invalid_response", `Invalid data bits: ${config.dataBits}. Must be one of ${Object.values(DataBits).join(", ")}`);
+            throw new ScaleError("invalid_response", `Bits de dados inválidos: ${config.dataBits}. Deve ser um de ${Object.values(DataBits).join(", ")}`);
         }
 
         config.parity = config.parity || Parity.None;
         if (!Object.values(Parity).includes(config.parity)) {
-            throw new ScaleError("calibration_error", `Invalid parity: ${config.parity}. Must be one of ${Object.values(Parity).join(", ")}`);
+            throw new ScaleError("calibration_error", `Paridade inválida: ${config.parity}. Deve ser uma de ${Object.values(Parity).join(", ")}`);
         }
 
         config.stopBits = config.stopBits || StopBits.One;
         if (!Object.values(StopBits).includes(config.stopBits)) {
-            throw new ScaleError("invalid_response", `Invalid stop bits: ${config.stopBits}. Must be one of ${Object.values(StopBits).join(", ")}`);
+            throw new ScaleError("invalid_response", `Bits de parada inválidos: ${config.stopBits}. Deve ser um de ${Object.values(StopBits).join(", ")}`);
         }
 
         config.timeout = config.timeout ?? 600;
         if (config.timeout < 100 || config.timeout > 5000) {
-            throw new ScaleError("timeout", `Timeout must be between 100ms and 5000ms, but received ${config.timeout}ms.`);
+            throw new ScaleError("timeout", `O timeout deve estar entre 100ms e 5000ms, mas foi recebido ${config.timeout}ms.`);
         }
 
-        config.retries = config.retries ?? 4
+        config.retries = config.retries ?? 4;
         if (config.retries && config.retries < 4) {
-            throw new ScaleError("serial_connection",`Retries must be 4 or greater, but received ${config.retries}.`);
+            throw new ScaleError("serial_connection", `As tentativas devem ser 4 ou mais, mas foi recebido ${config.retries}.`);
         }
         return config;
-    };
+    }
 
-
+    /**
+     * Desconecta todas as balanças conectadas.
+     *
+     * @throws {ScaleError} Se a desconexão falhar (tipo: `serial_connection`).
+     */
     static async disconnectAll(): Promise<void> {
         try {
             await scale_module.disconnectAll();
         } catch (error: any) {
-            throw new ScaleError("serial_connection", `Failed to disconnect all scales: ${error.message}`);
+            throw new ScaleError("serial_connection", `Falha ao desconectar todas as balanças: ${error.message}`);
         }
-    };
+    }
 };
 
 class ScaleError extends Error {
     type: ErrorType;
 
-    constructor(type: ErrorType,  message: string) {
+    constructor(type: ErrorType, message: string) {
         super(message);
         this.type = type;
-    }
-
-    toObject(): Record<string, any> {
-        return {
-            type: this.type,
-            message: this.message,
-        };
-    }
-}
+    };
+};
 
 export default SerialWeightScale;

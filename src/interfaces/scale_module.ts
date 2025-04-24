@@ -1,9 +1,15 @@
-import { NativeEventEmitter } from 'react-native';
+
 import type { Config, Device, ScaleResult } from './types';
 import SerialWeightScale from "../NativeSerialWeightScale";
 
-const ScaleModule = SerialWeightScale as any;
-const eventEmitter = new NativeEventEmitter(ScaleModule);
+const ScaleModule = SerialWeightScale;
+const monitoring_weight_listeners: any = {};
+
+ScaleModule.onLog((msg: string) => console.log(msg));
+
+ScaleModule.onWeightUpdate(({ productId, result }) => {
+    monitoring_weight_listeners[`monitoring_${productId}`]?.call(null, result);
+})
 
 export default {
     listDevices(): Promise<Device[]> {
@@ -16,14 +22,11 @@ export default {
         return ScaleModule.readWeight(productId);
     },
     monitorWeight(productId: number, callback: (result: ScaleResult) => void): () => void {
-        const listener = eventEmitter.addListener('WeightUpdate', (event: { productId: number; result: ScaleResult }) => {
-            if (event.productId === productId) {
-                callback(event.result);
-            }
-        });
+        monitoring_weight_listeners[`monitoring_${productId}`] = callback;
         ScaleModule.startMonitoringWeight(productId);
+
         return () => {
-            listener.remove();
+            delete monitoring_weight_listeners[`monitoring_${productId}`];
             ScaleModule.stopMonitoringWeight(productId);
         };
     },

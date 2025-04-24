@@ -1,5 +1,6 @@
 import type { TurboModule } from 'react-native';
 import { TurboModuleRegistry } from 'react-native';
+import type { EventEmitter } from 'react-native/Libraries/Types/CodegenTypes';
 export interface Spec extends TurboModule {
   listDevices(): Promise<Array<{
     name: string,
@@ -9,20 +10,16 @@ export interface Spec extends TurboModule {
     hasPermission: boolean
   }>>;
 
-  connect(
-    productId: number,
-    config: {
-      port: string,
-      baudRate: number,
-      dataBits: number,
-      parity: string,
-      stopBits: number,
-      timeout?: number,
-      retries?: number,
-      brand: string,
-      model?: string
-    }
-  ): Promise<void>;
+  connect(productId: number, config: {
+    baudRate: number,
+    dataBits: number,
+    parity: string,
+    stopBits: number,
+    timeout?: number,
+    retries?: number,
+    brand: string,
+    model?: string
+  }): Promise<void>;
 
   readWeight(productId: number): Promise<{ weight: number }>;
 
@@ -33,6 +30,14 @@ export interface Spec extends TurboModule {
   disconnect(productId: number): Promise<void>;
 
   disconnectAll(): Promise<void>;
+
+  readonly onWeightUpdate: EventEmitter<{
+    productId: number; result: {
+      weight?: number;
+      error?: string
+    }
+  }>;
+  readonly onLog: EventEmitter<string>;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('SerialWeightScale');

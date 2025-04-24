@@ -19,6 +19,7 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
 
     init {
         ContextHolder.setContext(reactApplicationContext)
+        Logger.setJsEmitter(::emitOnLog)
     }
 
     override fun getName(): String = NAME
@@ -38,7 +39,7 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
             }
             promise.resolve(deviceArray)
         } catch (e: Exception) {
-            promise.reject("SERIAL_ERROR", SerialConnectionException("Failed to list devices: ${e.message}", null).toMap())
+            promise.reject("serial_connection", e.message)
         }
     }
 
@@ -54,7 +55,7 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
         } catch (e: ScaleException) {
             promise.reject(e.getType(), e.message)
         } catch (e: Exception) {
-            promise.reject("SERIAL_ERROR", SerialConnectionException("Serial error: ${e.message}", null).toMap())
+            promise.reject("serial_connection", e.message)
         }
     }
 
@@ -67,7 +68,7 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
         } catch (e: ScaleException) {
             promise.reject(e.getType(), e.message)
         } catch (e: Exception) {
-            promise.reject("SERIAL_ERROR", SerialConnectionException("Serial error: ${e.message}", null).toMap())
+            promise.reject("serial_connection", e.message)
         }
     }
 
@@ -100,7 +101,7 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
         } catch (e: ScaleException) {
             promise.reject(e.getType(), e.message)
         } catch (e: Exception) {
-            promise.reject("SERIAL_ERROR", SerialConnectionException("Serial error: ${e.message}", null).toMap())
+            promise.reject("serial_connection", e.message)
         }
     }
 
@@ -111,7 +112,7 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
             monitoringJobs.remove(_productId)?.cancel()
             promise.resolve(null)
         } catch (e: Exception) {
-            promise.reject("SCALE_ERROR", InvalidScaleIdException("Unknown scale ID: $productId", null).toMap())
+            promise.reject("invalid_response", "Unknown scale ID: $productId")
         }
     }
 
@@ -124,9 +125,9 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
             handler.disconnect()
             promise.resolve(null)
         } catch (e: ScaleException) {
-            promise.reject("SCALE_ERROR", e.toMap())
+            promise.reject(e.getType(), e.message)
         } catch (e: Exception) {
-            promise.reject("SERIAL_ERROR", SerialConnectionException("Serial error: ${e.message}", null).toMap())
+            promise.reject("serial_connection", e.message)
         }
     }
 
@@ -138,7 +139,7 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
             handlers.clear()
             promise.resolve(null)
         } catch (e: Exception) {
-            promise.reject("SERIAL_ERROR", SerialConnectionException("Serial error: ${e.message}", null).toMap())
+            promise.reject("serial_connection", e.message)
         }
     }
 
@@ -147,8 +148,6 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
             putInt("productId", productId)
             putMap("result", result)
         }
-        reactApplicationContext
-            .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
-            .emit("WeightUpdate", event)
+        emitOnWeightUpdate(event)
     }
 }

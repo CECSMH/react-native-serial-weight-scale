@@ -60,10 +60,8 @@ export interface Config {
     retries?: number;
 }
 export interface ScaleError {
-    type: ErrorType;
     code: number;
     message: string;
-    rawResponse?: string;
 }
 
 export interface ScaleResult {

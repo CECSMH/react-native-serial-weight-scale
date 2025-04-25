@@ -13,17 +13,21 @@ import com.serialweightscale.exceptions.SerialConnectionException
 import java.nio.charset.StandardCharsets
 import com.serialweightscale.utils.Logger
 import com.facebook.react.bridge.*
+import android.content.BroadcastReceiver
+import android.content.IntentFilter
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.runBlocking
 
 data class SerialPort(val driver: UsbSerialDriver, val port: UsbSerialPort) {
     val isOpen: Boolean get() = port.isOpen
 }
 
 data class Device(
-    val name: String, 
-    val vendorId: Int, 
-    val productId: Int, 
-    val port: String, 
-    val hasPermission: Boolean
+    var name: String, 
+    var vendorId: Int, 
+    var productId: Int, 
+    var port: String, 
+    var hasPermission: Boolean
 ){
     fun toMap(): WritableMap {
         return Arguments.createMap().apply {
@@ -33,12 +37,6 @@ data class Device(
             putString("port", port)
             putBoolean("hasPermission", hasPermission)
         }
-    }
-    fun fromUsbDevice(device: UsbDevice){
-        port = device.deviceName
-        name = device.deviceName
-        vendorId = device.vendorId
-        productId = device.productId
     }
 }
 
@@ -80,7 +78,7 @@ object SerialUtils {
         val usbManager = getUsbManager()
         val availableDrivers = UsbSerialProber.getDefaultProber().findAllDrivers(usbManager)
          
-        return availableDrivers.mapIndexed { index, driver ->
+        return availableDrivers.mapIndexed { _, driver ->
             Device(
                 name = driver.device.deviceName,
                 vendorId = driver.device.vendorId,
@@ -96,16 +94,29 @@ object SerialUtils {
         return usbManager.hasPermission(device)
     }
 
-    fun requestPermission(device: UsbDevice) {
+    suspend fun requestPermission(device: UsbDevice): Boolean {
         val context = ContextHolder.getContext() ?: throw SerialConnectionException("Context unavailable")
         val usbManager = context.getSystemService(Context.USB_SERVICE) as UsbManager
+        val permissionGranted = CompletableDeferred<Boolean>()
+    
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                if (intent.action == ACTION_USB_PERMISSION) {
+                    val granted = intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)
+                    permissionGranted.complete(granted)
+                    context.unregisterReceiver(this)
+                }
+            }
+        }
+
+        context.registerReceiver(receiver, IntentFilter(ACTION_USB_PERMISSION))
+    
         val permissionIntent = PendingIntent.getBroadcast(
-            context,
-            0,
-            Intent(ACTION_USB_PERMISSION),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            context, 0, Intent(ACTION_USB_PERMISSION), PendingIntent.FLAG_MUTABLE
         )
+
         usbManager.requestPermission(device, permissionIntent)
+        return permissionGranted.await()
     }
 
     fun openPort(productId: Int, baudRate: Int, dataBits: Int, parity: String, stopBits: Int): SerialPort {
@@ -118,8 +129,10 @@ object SerialUtils {
         val device = driver.device
 
         if (!usbManager.hasPermission(device)) {
-            SerialUtils.requestPermission(device)
-            throw SerialConnectionException("USB permission required for product ID: $productId")
+            runBlocking {
+                val granted = SerialUtils.requestPermission(device)
+                if (!granted) throw SerialConnectionException("USB Permission Denied for ID=$productId")
+            }
         }
 
         val serialPort = driver.ports[0]

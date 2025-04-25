@@ -20,6 +20,7 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
     private val monitoringJobs = ConcurrentHashMap<Int, Job>()
     private val coroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
+
     init {
         ContextHolder.setContext(reactApplicationContext)
         Logger.setJsEmitter(::emitOnLog)
@@ -30,8 +31,8 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
         }
 
         val receiver: UsbReceiver = UsbReceiver();
-        receiver.setAttachedEmitter(::emitOnDeviceConnected)
-        receiver.setDetachedEmitter(::emitOnDeviceDisconnected)
+     /*    receiver.setAttachedEmitter(::emitOnDeviceConnected)
+        receiver.setDetachedEmitter(::emitOnDeviceDisconnected) */
         reactApplicationContext.registerReceiver(receiver, intentFilter)
     }
 

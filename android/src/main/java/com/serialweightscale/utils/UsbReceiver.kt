@@ -12,7 +12,7 @@ import com.serialweightscale.exceptions.SerialConnectionException
 class UsbReceiver : BroadcastReceiver() {
     private val ACTION_USB_PERMISSION = "com.serialweightscale.USB_PERMISSION"
 
-    private var _attached_emitter: (Device) -> Unit;
+/*     private var _attached_emitter: (Device) -> Unit;
     private var _detached_emitter: (Device) -> Unit;
     private var _permission_emitter: (Device) -> Unit;
 
@@ -25,21 +25,38 @@ class UsbReceiver : BroadcastReceiver() {
     fun setPermissionEmitter(emitter: (Device) -> Unit){
         _permission_emitter = emitter;
     }
-
+ */
     override fun onReceive(context: Context, intent: Intent) {
         val usbManager = context.getSystemService(Context.USB_SERVICE) as UsbManager
         val device: UsbDevice? = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE)
 
         when (intent.action) {
             UsbManager.ACTION_USB_DEVICE_ATTACHED -> {
-                val _d: Device = Device(hasPermission = false)
-                _d.fromUsbDevice(device)
-                _attached_emitter?.invoke(_d)
+                if(device != null){
+                    val _d: Device = Device(
+                        name = device!!.deviceName,
+                        vendorId = device!!.vendorId,
+                        productId = device!!.productId,
+                        port = device!!.deviceName,
+                        hasPermission = false
+                    )
+                Logger.log("conectado")
+                //_attached_emitter?.invoke(_d)
+               } 
             }
             UsbManager.ACTION_USB_DEVICE_DETACHED -> {
-                val _d: Device = Device(hasPermission = SerialUtils.hasPermission(device))
-                _d.fromUsbDevice(_d)
-                _detached_emitter?.invoke(_d)
+                if(device != null){
+                    val _d: Device = Device(
+                        name = device!!.deviceName,
+                        vendorId = device!!.vendorId,
+                        productId = device!!.productId,
+                        port = device!!.deviceName,
+                        hasPermission = false
+                    )
+                Logger.log("desconectado")
+
+                //_detached_emitter?.invoke(_d)
+               } 
             }
             ACTION_USB_PERMISSION -> {
                 val granted = intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)

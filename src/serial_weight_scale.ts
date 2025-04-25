@@ -85,7 +85,7 @@ class SerialWeightScale {
     monitorWeight(callback: (weight: number) => void): () => void {
         try {
             const listener = scale_module.monitorWeight(this.productId, (result: ScaleResult) => {
-                if (result.error) throw this.parseNativeError(result.error);
+               // if (result.error) throw this.parseNativeError(result.error);
                 callback(result.weight ?? 0);
             });
             return listener;
@@ -94,7 +94,7 @@ class SerialWeightScale {
         }
     }
 
-    onConnected(callback: (device: Device) => void) {
+   /*  onConnected(callback: (device: Device) => void) {
 
     };
 
@@ -108,7 +108,7 @@ class SerialWeightScale {
 
     onDetached() {
 
-    };
+    }; */
 
     /**
      * Converte erros do módulo nativo em instâncias de ScaleError.

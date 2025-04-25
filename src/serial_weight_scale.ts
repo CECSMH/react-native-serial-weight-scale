@@ -94,6 +94,22 @@ class SerialWeightScale {
         }
     }
 
+    onConnected(callback: (device: Device) => void) {
+
+    };
+
+    onDisconnected(callback: (device: Device) => void) {
+
+    };
+
+    onAttached() {
+
+    };
+
+    onDetached() {
+
+    };
+
     /**
      * Converte erros do módulo nativo em instâncias de ScaleError.
      *

@@ -38,7 +38,7 @@ class ToledoHandler(model: String?) : BaseHandler("toledo", model ?: "general") 
             }
             // Protocol A (Prix 3)
             initial_pos >= 0 && response.length > initial_pos + 21 && response[initial_pos + 21] == Constants.CR[0] -> {
-                decimals = if (response[initial_pos + 8].toInt() and 0x08 != 0) 100 else 1000 // Bit 3 of S2
+                decimals = if (response[initial_pos + 8].code and 0x08 != 0) 100 else 1000 // Bit 3 of S2
                 weight_str = response.substring(initial_pos + 2, initial_pos + 8).trim()
             }
             // Protocol B (Prix 3)
@@ -49,7 +49,7 @@ class ToledoHandler(model: String?) : BaseHandler("toledo", model ?: "general") 
             }
             // Protocol P03 (9091/8530/8540, possibly Prix 3)
             initial_pos >= 0 && (response.length >= initial_pos + 17 && response[initial_pos + 16] == Constants.CR[0] || response.indexOf(Constants.CR, initial_pos + 1) - initial_pos == 16) -> {
-                decimals = if (initial_pos + 1 < response.length && response[initial_pos + 1].toInt() and 0x08 != 0) 100 else 1000 // Bit 3 of SWA
+                decimals = if (initial_pos + 1 < response.length && response[initial_pos + 1].code and 0x08 != 0) 100 else 1000 // Bit 3 of SWA
                 weight_str = response.substring(initial_pos + 4, initial_pos + 10).trim()
             }
             // Protocol C (BCS21, Prix 3)

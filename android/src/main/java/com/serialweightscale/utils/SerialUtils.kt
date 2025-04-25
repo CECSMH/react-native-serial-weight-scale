@@ -12,12 +12,35 @@ import com.hoho.android.usbserial.driver.UsbSerialProber
 import com.serialweightscale.exceptions.SerialConnectionException
 import java.nio.charset.StandardCharsets
 import com.serialweightscale.utils.Logger
+import com.facebook.react.bridge.*
 
 data class SerialPort(val driver: UsbSerialDriver, val port: UsbSerialPort) {
     val isOpen: Boolean get() = port.isOpen
 }
 
-data class Device(val name: String, val vendorId: Int, val productId: Int, val port: String, val hasPermission: Boolean)
+data class Device(
+    val name: String, 
+    val vendorId: Int, 
+    val productId: Int, 
+    val port: String, 
+    val hasPermission: Boolean
+){
+    fun toMap(): WritableMap {
+        return Arguments.createMap().apply {
+            putString("name", name)
+            putInt("vendorId", vendorId)
+            putInt("productId", productId)
+            putString("port", port)
+            putBoolean("hasPermission", hasPermission)
+        }
+    }
+    fun fromUsbDevice(device: UsbDevice){
+        port = device.deviceName
+        name = device.deviceName
+        vendorId = device.vendorId
+        productId = device.productId
+    }
+}
 
 data class Config(
     val baudRate: Int,
@@ -56,12 +79,13 @@ object SerialUtils {
     fun listDevices(): List<Device> {
         val usbManager = getUsbManager()
         val availableDrivers = UsbSerialProber.getDefaultProber().findAllDrivers(usbManager)
+         
         return availableDrivers.mapIndexed { index, driver ->
             Device(
                 name = driver.device.deviceName,
                 vendorId = driver.device.vendorId,
                 productId = driver.device.productId,
-                port = "/dev/ttyUSB$index",
+                port = driver.device.deviceName,
                 hasPermission = usbManager.hasPermission(driver.device)
             )
         }
@@ -89,7 +113,7 @@ object SerialUtils {
 
         val availableDrivers = UsbSerialProber.getDefaultProber().findAllDrivers(usbManager)
 
-        val driver = availableDrivers.find { it.device.productId == productId } ?: throw SerialConnectionException("Device not found: Product=$productId")
+        val driver = availableDrivers.find { it.device.productId == productId } ?: throw SerialConnectionException("Device not found: ID=$productId")
 
         val device = driver.device
 
@@ -128,8 +152,9 @@ object SerialUtils {
 
     fun read(port: SerialPort, timeout: Int): String {
         if (!port.isOpen) throw SerialConnectionException("Port not open")
-        val buffer = ByteArray(1024)
+        val buffer = ByteArray(3072)
         val bytesRead = port.port.read(buffer, timeout)
+
         return if (bytesRead > 0) {
             String(buffer, 0, bytesRead, StandardCharsets.US_ASCII)
         } else {
@@ -138,18 +163,13 @@ object SerialUtils {
     }
 
     fun closePort(port: SerialPort) {
-        if (port.isOpen) {
-            port.port.close()
-        }
+        if (port.isOpen) { port.port.close() }
     }
 }
 
 object ContextHolder {
     private var context: Context? = null
 
-    fun setContext(ctx: Context) {
-        context = ctx
-    }
-
+    fun setContext(ctx: Context) { context = ctx }
     fun getContext(): Context? = context
 }

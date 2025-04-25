@@ -31,12 +31,21 @@ export interface Spec extends TurboModule {
 
   disconnectAll(): Promise<void>;
 
-  readonly onWeightUpdate: EventEmitter<{
-    productId: number; result: {
-      weight?: number;
-      error?: string
-    }
-  }>;
+  readonly onDeviceConnected: EventEmitter<{
+    name: string,
+    vendorId: number,
+    productId: number,
+    port: string,
+    hasPermission: boolean
+  }>
+  readonly onDeviceDisconnected: EventEmitter<{
+    name: string,
+    vendorId: number,
+    productId: number,
+    port: string,
+    hasPermission: boolean
+  }>
+  readonly onWeightUpdate: EventEmitter<{ productId: number; result: { weight?: number; error?: string } }>;
   readonly onLog: EventEmitter<string>;
 }
 

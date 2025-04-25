@@ -20,14 +20,12 @@ abstract class BaseHandler(override val brand: String, override val model: Strin
             config.parity,
             config.stopBits
         )
-        log("Connected: $brand/$model")
     }
 
     override fun disconnect() {
         serialPort?.let {
             SerialUtils.closePort(it)
             serialPort = null
-            log("Disconnected: $brand/$model")
         }
     }
 
@@ -35,14 +33,13 @@ abstract class BaseHandler(override val brand: String, override val model: Strin
         if (!isConnected) throw SerialConnectionException("Not connected", null)
         command?.let {
             SerialUtils.send(serialPort!!, it)
-            log("TX -> $it")
         }
     }
 
     protected fun readResponse(timeout: Int): String {
         if (!isConnected) throw SerialConnectionException("Not connected", null)
         val response = SerialUtils.read(serialPort!!, timeout)
-        log("RX <- $response")
+     
         if (response.isNullOrEmpty()) throw TimeoutException("No response received", null)
         return response
     }
@@ -53,6 +50,7 @@ abstract class BaseHandler(override val brand: String, override val model: Strin
         repeat(retries + 1) { attempt ->
             try {
                 sendCommand(getCommand())
+
                 val response = readResponse(timeout)
                 return parseResponse(response)
             } catch (e: UnstableWeightException) {
@@ -74,8 +72,4 @@ abstract class BaseHandler(override val brand: String, override val model: Strin
     }
 
     abstract fun getCommand(): String?
-
-    protected fun log(message: String) {
-        Logger.log("$brand/$model: $message")
-    }
 }

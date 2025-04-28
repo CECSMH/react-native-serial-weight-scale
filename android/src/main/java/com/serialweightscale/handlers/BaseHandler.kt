@@ -2,12 +2,21 @@ package com.serialweightscale.handlers
 
 import com.serialweightscale.exceptions.*
 import com.serialweightscale.utils.*
+import kotlinx.coroutines.*
 
 abstract class BaseHandler(override val brand: String, override val model: String?) : Handler {
     protected var serialPort: SerialPort? = null
     protected var timeout: Int = 500
     protected var retries: Int = 0
     val isConnected: Boolean get() = serialPort?.isOpen ?: false
+
+    override fun getDevice(): Device = Device(
+        name = serialPort!!.device.deviceName,
+        vendorId = serialPort!!.device.vendorId,
+        productId = serialPort!!.device.productId,
+        port = serialPort!!.device.deviceName,
+        hasPermission = true
+    )
 
     override fun connect(productId: Int, config: Config) {
         if (isConnected) return
@@ -46,15 +55,17 @@ abstract class BaseHandler(override val brand: String, override val model: Strin
 
     abstract fun parseResponse(response: String): Double
 
-    override fun readWeight(): Double {
+    override suspend fun readWeight(): Double {
         repeat(retries + 1) { attempt ->
             try {
                 sendCommand(getCommand())
-
+                delay(200)
                 val response = readResponse(timeout)
                 return parseResponse(response)
-            } catch (e: UnstableWeightException) {
-                if (attempt == retries) throw e
+            } catch (e: ScaleException) {
+                if (attempt == retries) throw e;
+            } catch (e: Exception){ 
+                if (attempt == retries) throw e;
             }
         }
         throw UnstableWeightException("Failed after $retries retries")
@@ -63,7 +74,7 @@ abstract class BaseHandler(override val brand: String, override val model: Strin
     override fun monitorWeight(): Sequence<Double> = sequence {
         while (isConnected) {
             try {
-                val weight = readWeight()
+                val weight = runBlocking{readWeight()}
                 yield(weight)
             } catch (e: ScaleException) {
                 throw e

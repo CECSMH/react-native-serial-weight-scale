@@ -1,13 +1,15 @@
 # react-native-serial-weight-scale
 
-A React Native module for interfacing with serial weight scales. This library provides a TypeScript-compatible API to connect, read and monitor serial weight scales.
+A React Native module for interfacing with serial weight scales. This library provides a TypeScript-compatible API to connect, read, monitor, and manage serial weight scales.
 
 ## Features
 
 - **Read Weight**: Retrieve the current weight from a scale.
 - **Monitor Weight**: Continuously monitor weight changes with a callback-based API.
 - **Device Listing**: List all available serial devices.
+- **Event Handling**: Register callbacks for device connection, disconnection, attachment, and detachment.
 - **TypeScript Support**: Full type definitions for a type-safe development experience.
+- **Error Handling**: Standardized `ScaleError` with specific error types for debugging.
 
 ## Installation
 
@@ -25,7 +27,7 @@ yarn add react-native-serial-weight-scale
 
 ## Usage
 
-The `SerialWeightScale` class is the primary interface for interacting with weight scales. Below is a complete example demonstrating how to use the library.
+The `SerialWeightScale` class is the primary interface for interacting with weight scales. Below is a complete example demonstrating device listing, weight reading, monitoring, and event handling.
 
 ### Example
 
@@ -52,6 +54,12 @@ async function useScale() {
     // Initialize scale with a product ID
     const scale = new SerialWeightScale(devices[0].productId, config);
 
+    // Register event handlers
+    scale.onAttached((device) => console.log('Device attached:', device));
+    scale.onDetached((device) => console.log('Device detached:', device));
+    scale.onConnected((device) => console.log('Device connected:', device));
+    scale.onDisconnected((device) => console.log('Device disconnected:', device));
+
     // Connect to the scale
     await scale.connect();
     console.log('Connected to scale');
@@ -68,12 +76,12 @@ async function useScale() {
     // Stop monitoring and disconnect after 10 seconds
     setTimeout(async () => {
       stopMonitoring();
+      // or scale.stopMonitorWeight();
       await scale.disconnect();
       console.log('Disconnected');
     }, 10000);
   } catch (error) {
-      console.error(`Error type: ${error.type}, Message: ${error.message}`);
-    }
+    console.error(`Error type: ${error.type}, Message: ${error.message}`);
   }
 }
 
@@ -162,46 +170,86 @@ constructor(productId: number, config: Config)
 ```
 
 - **Parameters**:
-  - `productId`: Unique identifier for the scale.
+  - `productId`: Unique identifier for the scale (obtained from `listDevices`).
   - `config`: Serial port configuration.
-- **Throws**: `ScaleError` if the configuration is invalid.
+- **Throws**: `ScaleError` if the configuration is invalid (e.g., invalid brand, baud rate, or timeout).
 
 #### Static Methods
 
 - `listDevices(): Promise<Device[]>`
 
   - Lists available serial devices.
-  - Returns: Array of `Device` objects with `name`, `vendorId`, `productId`, `port`, and `hasPermission`.
-  - Throws: `ScaleError` (type: `serial_connection`).
+  - **Returns**: Array of `Device` objects with `name`, `vendorId`, `productId`, `port`, and `hasPermission`.
+  - **Throws**: `ScaleError` (type: `serial_connection`).
 
 - `disconnectAll(): Promise<void>`
 
   - Disconnects all connected scales.
-  - Throws: `ScaleError` (type: `serial_connection`).
+  - **Throws**: `ScaleError` (type: `serial_connection`).
 
 #### Instance Methods
 
 - `connect(): Promise<void>`
 
   - Connects to the scale.
-  - Throws: `ScaleError` (e.g., type: `serial_connection`).
+  - **Throws**: `ScaleError` (e.g., type: `serial_connection`).
 
 - `readWeight(): Promise<number>`
 
   - Reads the current weight.
-  - Returns: Weight value or `0` if unavailable.
-  - Throws: `ScaleError` (e.g., type: `serial_connection`, `invalid_response`).
+  - **Returns**: Weight value (in grams) or `0` if unavailable.
+  - **Throws**: `ScaleError` (e.g., type: `serial_connection`, `invalid_response`).
 
 - `disconnect(): Promise<void>`
 
   - Disconnects the scale.
-  - Throws: `ScaleError` (type: `serial_connection`).
+  - **Throws**: `ScaleError` (type: `serial_connection`).
 
 - `monitorWeight(callback: (weight: number) => void): () => void`
 
   - Monitors weight changes, calling the callback with each new weight.
-  - Returns: Function to stop monitoring.
-  - Throws: `ScaleError` (e.g., type: `serial_connection`).
+  - **Returns**: Function to stop monitoring.
+  - **Throws**: `ScaleError` (e.g., type: `serial_connection`).
+
+- `stopMonitorWeight(): void`
+
+  - Stops weight monitoring for the scale.
+
+- `onConnected(callback: (device: Device) => void): () => void`
+
+  - Registers a callback for when the device is connected.
+  - **Returns**: Function to remove the event listener.
+
+- `onDisconnected(callback: (device: Device) => void): () => void`
+
+  - Registers a callback for when the device is disconnected.
+  - **Returns**: Function to remove the event listener.
+
+- `onAttached(callback: (device: Device) => void): () => void`
+
+  - Registers a callback for when the device is attached (plugged in).
+  - **Returns**: Function to remove the event listener.
+
+- `onDetached(callback: (device: Device) => void): () => void`
+
+  - Registers a callback for when the device is detached (unplugged).
+  - **Returns**: Function to remove the event listener.
+
+- `removeConnectedEvent(): void`
+
+  - Removes the connection event listener.
+
+- `removeDisconnectedEvent(): void`
+
+  - Removes the disconnection event listener.
+
+- `removeAttachedEvent(): void`
+
+  - Removes the attachment event listener.
+
+- `removeDetachedEvent(): void`
+
+  - Removes the detachment event listener.
 
 ## Error Handling
 
@@ -235,7 +283,7 @@ type ErrorType =
 try {
   await scale.connect();
 } catch (error) {
-    console.error(`Error type: ${error.type}, Message: ${error.message}`);
+  console.error(`Error type: ${error.type}, Message: ${error.message}`);
 }
 ```
 

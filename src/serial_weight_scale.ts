@@ -83,10 +83,10 @@ class SerialWeightScale {
      * @throws {ScaleError} Se o monitoramento falhar (por exemplo, tipo: `serial_connection`).
      */
     monitorWeight(callback: (weight: number) => void): () => void {
+        let last_weight = 0;
         try {
             const listener = scale_module.monitorWeight(this.productId, (result: ScaleResult) => {
-               // if (result.error) throw this.parseNativeError(result.error);
-                callback(result.weight ?? 0);
+                callback(last_weight = result.weight ?? last_weight);
             });
             return listener;
         } catch (error: any) {
@@ -94,21 +94,80 @@ class SerialWeightScale {
         }
     }
 
-   /*  onConnected(callback: (device: Device) => void) {
-
+    /** 
+     * Para o monitoramento do peso.
+     */
+    stopMonitorWeight() {
+        scale_module.stopMonitorWeight(this.productId);
     };
 
-    onDisconnected(callback: (device: Device) => void) {
-
+    /** 
+    * Registra um callback para ser chamado quando o dispositivo for conectado.
+    *
+    * @param callback - Função executada ao conectar o dispositivo.
+    * @returns Uma função que remove o evento de conexão quando chamada.
+    */
+    onConnected(callback: (device: Device) => void): () => void {
+        return scale_module.onDeviceConnected(this.productId, callback);
     };
 
-    onAttached() {
-
+    /** 
+     * Registra um callback para ser chamado quando o dispositivo for desconectado.
+     *
+     * @param callback - Função executada ao desconectar o dispositivo.
+     * @returns Uma função que remove o evento de desconexão quando chamada.
+     */
+    onDisconnected(callback: (device: Device) => void): () => void {
+        return scale_module.onDeviceDisconnected(this.productId, callback);
     };
 
-    onDetached() {
+    /** 
+     * Registra um callback para ser chamado quando o dispositivo for anexado (plugado).
+     *
+     * @param callback - Função executada ao anexar o dispositivo.
+     * @returns Uma função que remove o evento de anexação quando chamada.
+     */
+    onAttached(callback: (device: Device) => void): () => void {
+        return scale_module.onDeviceAttached(this.productId, callback);
+    };
 
-    }; */
+    /** 
+     * Registra um callback para ser chamado quando o dispositivo for removido (desplugado).
+     *
+     * @param callback - Função executada ao remover o dispositivo.
+     * @returns Uma função que remove o evento de remoção quando chamada.
+     */
+    onDetached(callback: (device: Device) => void): () => void {
+        return scale_module.onDeviceDetached(this.productId, callback);
+    };
+
+    /** 
+     * Remove o evento de conexão do dispositivo.
+     */
+    removeConnectedEvent() {
+        scale_module.removeOnDeviceConnected(this.productId);
+    };
+
+    /** 
+     * Remove o evento de desconexão do dispositivo.
+     */
+    removeDisconnectedEvent() {
+        scale_module.removeOnDeviceDisconnected(this.productId);
+    };
+
+    /** 
+     * Remove o evento de anexação do dispositivo.
+     */
+    removeAttachedEvent() {
+        scale_module.removeOnDeviceAttached(this.productId);
+    };
+
+    /** 
+     * Remove o evento de remoção do dispositivo.
+     */
+    removaDetachedEvent() {
+        scale_module.removeOnDeviceDetached(this.productId);
+    };
 
     /**
      * Converte erros do módulo nativo em instâncias de ScaleError.

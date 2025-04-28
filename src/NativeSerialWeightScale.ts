@@ -38,6 +38,15 @@ export interface Spec extends TurboModule {
     port: string,
     hasPermission: boolean
   }>
+
+  readonly onDeviceAttached: EventEmitter<{
+    name: string,
+    vendorId: number,
+    productId: number,
+    port: string,
+    hasPermission: boolean
+  }>
+
   readonly onDeviceDisconnected: EventEmitter<{
     name: string,
     vendorId: number,
@@ -45,6 +54,15 @@ export interface Spec extends TurboModule {
     port: string,
     hasPermission: boolean
   }>
+
+  readonly onDeviceDetached: EventEmitter<{
+    name: string,
+    vendorId: number,
+    productId: number,
+    port: string,
+    hasPermission: boolean
+  }>
+
   readonly onWeightUpdate: EventEmitter<{ productId: number; result: { weight?: number; error?: string } }>;
   readonly onLog: EventEmitter<string>;
 }

@@ -94,6 +94,7 @@ dependencies {
   implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
   implementation 'com.github.mik3y:usb-serial-for-android:3.9.0'
   implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3'
+  implementation 'androidx.core:core-ktx:1.7.0'
 }
 
 react {

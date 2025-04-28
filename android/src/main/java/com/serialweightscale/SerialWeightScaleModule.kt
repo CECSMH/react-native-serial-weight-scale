@@ -10,6 +10,7 @@ import com.serialweightscale.handlers.*
 import com.serialweightscale.utils.*
 import kotlinx.coroutines.*
 import java.util.concurrent.ConcurrentHashMap
+import androidx.core.content.ContextCompat
 import com.serialweightscale.utils.UsbReceiver
 
 class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSerialWeightScaleSpec(reactContext), TurboModule {
@@ -20,7 +21,6 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
     private val monitoringJobs = ConcurrentHashMap<Int, Job>()
     private val coroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
-
     init {
         ContextHolder.setContext(reactApplicationContext)
         Logger.setJsEmitter(::emitOnLog)
@@ -29,13 +29,13 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
             addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED)
             addAction(UsbManager.ACTION_USB_DEVICE_DETACHED)
         }
-
         val receiver: UsbReceiver = UsbReceiver();
-     /*    receiver.setAttachedEmitter(::emitOnDeviceConnected)
-        receiver.setDetachedEmitter(::emitOnDeviceDisconnected) */
+
+        receiver.setAttachedEmitter(::onDeviceAttached)
+        receiver.setDetachedEmitter(::onDeviceDetached) 
+
         reactApplicationContext.registerReceiver(receiver, intentFilter)
     }
-
 
     override fun getName(): String = NAME
 
@@ -52,32 +52,37 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
     }
 
     override fun connect(productId: Double, configMap: ReadableMap, promise: Promise) {
-        try {
-            val _productId = productId.toInt() 
-            val config = Config.fromMap(configMap)
-            val handler = HandlerFactory.create(config.brand, config.model)
+        coroutineScope.launch{
+            try {
+                val _productId = productId.toInt() 
+                val config = Config.fromMap(configMap)
+                val handler = HandlerFactory.create(config.brand, config.model)
 
-            handler.connect(_productId, config) 
-            handlers[_productId] = handler
-            promise.resolve(null)
-        } catch (e: ScaleException) {
-            promise.reject(e.getType(), e.message)
-        } catch (e: Exception) {
-            promise.reject("serial_connection", e.message)
+                handler.connect(_productId, config) 
+                handlers[_productId] = handler
+                emitOnDeviceConnected(handler.getDevice().toMap())
+                promise.resolve(null)
+            } catch (e: ScaleException) {
+                promise.reject(e.getType(), e.message)
+            } catch (e: Exception) {
+                promise.reject("serial_connection", e.message)
+            }
         }
     }
 
     override fun readWeight(productId: Double, promise: Promise) {
-        try {
-            val _productId = productId.toInt() 
-            val handler = handlers[_productId] ?: throw InvalidScaleIdException("Unknown scale ID: $_productId", null)
-            val weight = handler.readWeight()
-
-            promise.resolve(Arguments.createMap().apply { putDouble("weight", weight) })
-        } catch (e: ScaleException) {
-            promise.reject(e.getType(), e.message)
-        } catch (e: Exception) {
-            promise.reject("serial_connection", e.message)
+        coroutineScope.launch{
+            try {
+                val _productId = productId.toInt() 
+                val handler = handlers[_productId] ?: throw InvalidScaleIdException("Unknown scale ID: $_productId", null)
+                val weight = handler.readWeight()
+    
+                promise.resolve(Arguments.createMap().apply { putDouble("weight", weight) })
+            } catch (e: ScaleException) {
+                promise.reject(e.getType(), e.message)
+            } catch (e: Exception) {
+                promise.reject("serial_connection", e.message)
+            }
         }
     }
 
@@ -92,19 +97,22 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
             }
 
             val job = coroutineScope.launch {
-                try {
-                    handler.monitorWeight().forEach { weight: Double ->
-                        val resultMap = Arguments.createMap().apply { putDouble("weight", weight) }
+                while(isActive) {
+                    try {
+                        handler.monitorWeight().forEach { weight: Double ->
+                            val resultMap = Arguments.createMap().apply { putDouble("weight", weight) }
+                            emitWeightUpdate(_productId, resultMap)
+                        }
+                    } catch (e: ScaleException) {
+                        val resultMap = Arguments.createMap().apply { putMap("error", e.toMap()) }
+                        emitWeightUpdate(_productId, resultMap)
+                    } catch (e: Exception) {
+                        val resultMap = Arguments.createMap().apply {
+                            putMap("error", SerialConnectionException("Serial error: ${e.message}", null).toMap())
+                        }
                         emitWeightUpdate(_productId, resultMap)
                     }
-                } catch (e: ScaleException) {
-                    val resultMap = Arguments.createMap().apply { putMap("error", e.toMap()) }
-                    emitWeightUpdate(_productId, resultMap)
-                } catch (e: Exception) {
-                    val resultMap = Arguments.createMap().apply {
-                        putMap("error", SerialConnectionException("Serial error: ${e.message}", null).toMap())
-                    }
-                    emitWeightUpdate(_productId, resultMap)
+                    delay(50)
                 }
             }
             monitoringJobs[_productId] = job
@@ -129,10 +137,9 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
     override fun disconnect(productId: Double, promise: Promise) {
         try {
             val _productId = productId.toInt() 
-            val handler = handlers.remove(_productId) ?: throw InvalidScaleIdException("Unknown scale ID: $_productId", null)
 
-            monitoringJobs.remove(_productId)?.cancel()
-            handler.disconnect()
+            disconnect(_productId)
+
             promise.resolve(null)
         } catch (e: ScaleException) {
             promise.reject(e.getType(), e.message)
@@ -151,6 +158,24 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
         } catch (e: Exception) {
             promise.reject("serial_connection", e.message)
         }
+    }
+
+    fun onDeviceAttached(device: Device){
+        emitOnDeviceAttached(device.toMap())
+    }
+
+    fun onDeviceDetached(device: Device){
+        try{
+            disconnect(device.productId)
+        }catch(e: Exception){}
+        emitOnDeviceDetached(device.toMap())
+    }
+
+    private fun disconnect(productId: Int) {
+        val handler = handlers.remove(productId) ?: throw InvalidScaleIdException("Unknown scale ID: $productId", null)
+        monitoringJobs.remove(productId)?.cancel()
+        emitOnDeviceDisconnected(handler.getDevice().toMap())
+        handler.disconnect()
     }
 
     private fun emitWeightUpdate(productId: Int, result: WritableMap) {

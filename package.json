@@ -49,7 +49,17 @@
     "filizola",
     "urano",
     "micheletti",
-    "android"
+    "android",
+    "bluetooth",
+    "usb",
+    "hardware",
+    "iot",
+    "scale-module",
+    "measurement",
+    "react-native-module",
+    "nodejs",
+    "automation",
+    "weighing"
   ],
   "repository": {
     "type": "git",

@@ -55,7 +55,7 @@ abstract class BaseHandler(override val brand: String, override val model: Strin
 
     abstract fun parseResponse(response: String): Double
 
-    override suspend fun readWeight(): Double {
+    override suspend fun readWeight(timeout: Int): Double {
         repeat(retries + 1) { attempt ->
             try {
                 sendCommand(getCommand())
@@ -71,10 +71,14 @@ abstract class BaseHandler(override val brand: String, override val model: Strin
         throw UnstableWeightException("Failed after $retries retries")
     }
 
+    override suspend fun readWeight(): Double {
+       return readWeight(timeout)
+    }
+
     override fun monitorWeight(): Sequence<Double> = sequence {
         while (isConnected) {
             try {
-                val weight = runBlocking{readWeight()}
+                val weight = runBlocking{readWeight(50)}
                 yield(weight)
             } catch (e: ScaleException) {
                 throw e

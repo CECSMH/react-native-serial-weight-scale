@@ -29,6 +29,8 @@ yarn add react-native-serial-weight-scale
 
 The `SerialWeightScale` class is the primary interface for interacting with weight scales. Below is a complete example demonstrating device listing, weight reading, monitoring, and event handling.
 
+**Note**: This module is compatible only with Android devices due to its reliance on Android-specific serial communication APIs.
+
 ### Example
 
 ```typescript
@@ -289,6 +291,7 @@ try {
 
 ## Requirements
 
+- **Platform**: Android only (due to dependency on Android-specific serial communication APIs)
 - React Native ≥ 0.60
 - Node.js ≥ 14
 

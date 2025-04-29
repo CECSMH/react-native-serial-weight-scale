@@ -9,6 +9,7 @@ interface Handler {
     fun getDevice(): Device
     fun connect(productId: Int, config: Config)
     suspend fun readWeight(): Double
+    suspend fun readWeight(timeout: Int): Double
     fun monitorWeight(): Sequence<Double>
     fun disconnect()
 }

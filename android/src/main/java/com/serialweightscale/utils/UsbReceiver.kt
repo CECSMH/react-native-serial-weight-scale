@@ -23,7 +23,6 @@ class UsbReceiver : BroadcastReceiver() {
     }
  
     override fun onReceive(context: Context, intent: Intent) {
-        val usbManager = context.getSystemService(Context.USB_SERVICE) as UsbManager
         val device: UsbDevice? = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE)
 
         when (intent.action) {

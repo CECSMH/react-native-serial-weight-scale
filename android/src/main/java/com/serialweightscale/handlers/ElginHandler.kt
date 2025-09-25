@@ -1,5 +1,7 @@
 package com.serialweightscale.handlers
 
+import com.serialweightscale.exceptions.*
+import com.serialweightscale.utils.*
 
 class ElginHandler() : BaseHandler("elgin", null){
     private var decimals: Int = 3

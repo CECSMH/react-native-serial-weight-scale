@@ -8,6 +8,8 @@ abstract class BaseHandler(override val brand: String, override val model: Strin
     protected var serialPort: SerialPort? = null
     protected var timeout: Int = 500
     protected var retries: Int = 0
+    protected var last_response: String = ""
+    
     val isConnected: Boolean get() = serialPort?.isOpen ?: false
 
     override fun getDevice(): Device = Device(
@@ -61,11 +63,11 @@ abstract class BaseHandler(override val brand: String, override val model: Strin
                 sendCommand(getCommand())
                 delay(200)
 
+                val response = readResponse(timeout)
                 //alguns modelos guardam internamente a ultima leitura, 
                 //uma tentatira a mais na primeira volta resolve esse conflito.
                 if((last_response == response || last_response.isEmpty()) && attempt == 0) return@repeat
 
-                val response = readResponse(timeout)
                 return parseResponse(response)
             } catch (e: ScaleException) {
                 if (attempt == retries) throw e;

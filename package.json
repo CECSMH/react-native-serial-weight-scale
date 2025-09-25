@@ -1,6 +1,6 @@
 {
   "name": "react-native-serial-weight-scale",
-  "version": "0.2.0",
+  "version": "0.2.2",
   "description": "A React Native module for interfacing with serial weight scales",
   "source": "./src/index.tsx",
   "main": "./lib/module/index.js",
@@ -37,7 +37,7 @@
     "typecheck": "tsc",
     "lint": "eslint \"**/*.{js,ts,tsx}\"",
     "clean": "del-cli android/build example/android/build example/android/app/build example/ios/build lib",
-    "prepare": "bob build",
+    "prepublishOnly": "bob build",
     "release": "release-it"
   },
   "keywords": [

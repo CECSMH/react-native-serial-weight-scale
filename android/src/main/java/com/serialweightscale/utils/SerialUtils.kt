@@ -167,7 +167,6 @@ object SerialUtils {
         if (!port.isOpen) throw SerialConnectionException("Port not open")
         val buffer = ByteArray(3072)
         val bytesRead = port.port.read(buffer, timeout)
-
         return if (bytesRead > 0) {
             String(buffer, 0, bytesRead, StandardCharsets.US_ASCII)
         } else {

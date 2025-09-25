@@ -112,6 +112,7 @@ interface Config {
 
   ```typescript
   enum Brand {
+    Elgin = "Elgin"
     Toledo = "toledo",
     Filizola = "filizola",
     Urano = "urano",

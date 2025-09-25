@@ -60,6 +60,11 @@ abstract class BaseHandler(override val brand: String, override val model: Strin
             try {
                 sendCommand(getCommand())
                 delay(200)
+
+                //alguns modelos guardam internamente a ultima leitura, 
+                //uma tentatira a mais na primeira volta resolve esse conflito.
+                if((last_response == response || last_response.isEmpty()) && attempt == 0) return@repeat
+
                 val response = readResponse(timeout)
                 return parseResponse(response)
             } catch (e: ScaleException) {

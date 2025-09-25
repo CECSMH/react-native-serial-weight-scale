@@ -5,6 +5,7 @@ object HandlerFactory {
         "toledo" -> ToledoHandler(model)
         "filizola" -> FilizolaHandler()
         "urano" -> UranoHandler(model)
+        "elgin" -> ElginHandler()
         "micheletti" -> MichelettiHandler()
         else -> throw IllegalArgumentException("Unsupported brand: $brand")
     }

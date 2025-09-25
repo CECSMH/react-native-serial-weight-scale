@@ -44,6 +44,7 @@ export enum Parity {
 }
 
 export enum Brand {
+    Elgin = "elgin",
     Toledo = "toledo",
     Filizola = "filizola",
     Urano = "urano",

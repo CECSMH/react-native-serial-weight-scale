@@ -1,6 +1,9 @@
 
 import type { Config, Device, ScaleResult } from './types';
-import SerialWeightScale from "../NativeSerialWeightScale";
+import { NativeEventEmitter, NativeModules } from 'react-native';
+
+const { SerialWeightScale } = NativeModules;
+const emitter = new NativeEventEmitter(SerialWeightScale);
 
 const ScaleModule = SerialWeightScale;
 
@@ -10,27 +13,27 @@ const disconnected_listeners: any = {};
 const attached_listeners: any = {};
 const detached_listeners: any = {};
 
-ScaleModule.setOnLog((msg: string) => console.log(msg));
+emitter.addListener('onLog', (msg: string) => {console.log(msg);});
 
-ScaleModule.setOnWeightUpdate(({ productId, result }) => {
-    monitoring_weight_listeners[`monitoring_${productId}`]?.call(null, result);
+emitter.addListener('onWeightUpdate', ({ productId, result }) => {
+  monitoring_weight_listeners[`monitoring_${productId}`]?.call(null, result);
 });
 
-ScaleModule.setOnDeviceAttached((device) => {
-    attached_listeners[`evt_${device.productId}`]?.call(null, device);
+emitter.addListener('onDeviceAttached', (device) => {
+  attached_listeners[`evt_${device.productId}`]?.call(null, device);
 });
 
-ScaleModule.setOnDeviceConnected((device) => {
-    connected_listeners[`evt_${device.productId}`]?.call(null, device);
+emitter.addListener('onDeviceConnected', (device) => {
+  connected_listeners[`evt_${device.productId}`]?.call(null, device);
 });
 
-ScaleModule.setOnDeviceDisconnected((device) => {
-    disconnected_listeners[`evt_${device.productId}`]?.call(null, device);
-    delete monitoring_weight_listeners[`evt_${device.productId}`];
+emitter.addListener('onDeviceDisconnected', (device) => {
+  disconnected_listeners[`evt_${device.productId}`]?.call(null, device);
+  delete monitoring_weight_listeners[`evt_${device.productId}`];
 });
 
-ScaleModule.setOnDeviceDetached((device) => {
-    detached_listeners[`evt_${device.productId}`]?.call(null, device);
+emitter.addListener('onDeviceDetached', (device) => {
+  detached_listeners[`evt_${device.productId}`]?.call(null, device);
 });
 
 export default {

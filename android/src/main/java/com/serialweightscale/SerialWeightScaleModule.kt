@@ -21,15 +21,6 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
     private val handlers = ConcurrentHashMap<Int, Handler>()
     private val monitoringJobs = ConcurrentHashMap<Int, Job>()
     private val coroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    
-    
-    private var onDeviceConnected: Callback? = null
-    private var onDeviceAttached: Callback? = null
-    private var onDeviceDisconnected: Callback? = null
-    private var onDeviceDetached: Callback? = null
-    private var onWeightUpdate: Callback? = null
-    private var onLog: Callback? = null
-
 
     init {
         ContextHolder.setContext(reactApplicationContext)
@@ -70,7 +61,7 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
 
                 handler.connect(_productId, config) 
                 handlers[_productId] = handler
-                onDeviceConnected?.invoke(handler.getDevice().toMap())
+                emitEvent("onDeviceConnected", handler.getDevice().toMap())
                 promise.resolve(null)
             } catch (e: ScaleException) {
                 promise.reject(e.getType(), e.message)
@@ -171,21 +162,21 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
     }
 
     fun onDeviceAttached(device: Device){
-        onDeviceAttached?.invoke(device.toMap())
+        emitEvent("onDeviceAttached", device.toMap())
     }
 
     fun onDeviceDetached(device: Device){
         try{
             disconnect(device.productId)
         }catch(e: Exception){}
-        onDeviceDetached?.invoke(device.toMap())
+        emitEvent("onDeviceDetached", handler.getDevice().toMap())
     }
 
     private fun disconnect(productId: Int) {
         val handler = handlers.remove(productId) ?: throw InvalidScaleIdException("Unknown scale ID: $productId", null)
         monitoringJobs.remove(productId)?.cancel()
 
-        onDeviceDisconnected?.invoke(handler.getDevice().toMap())
+        emitEvent("onDeviceDisconnected", handler.getDevice().toMap())
         handler.disconnect()
     }
 
@@ -194,15 +185,14 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
             putInt("productId", productId)
             putMap("result", result)
         }
-        onWeightUpdate?.invoke(map)
+        emitEvent("onWeightUpdate", event)
     }
 
-    fun notifyLog(message: String) { onLog?.invoke(message)}
-    
-    override fun setOnDeviceAttached(callback: Callback) {onDeviceAttached = callback}
-    override fun setOnDeviceConnected(callback: Callback) {onDeviceConnected = callback}
-    override fun setOnDeviceDisconnected(callback: Callback) {onDeviceDisconnected = callback}
-    override fun setOnDeviceDetached(callback: Callback) {onDeviceDetached = callback}
-    override fun setOnWeightUpdate(callback: Callback) {onWeightUpdate = callback}
-    override fun setOnLog(callback: Callback) {onLog = callback}
+    private fun emitEvent(eventName: String, payload: WritableMap) {
+        reactApplicationContext
+            .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+            .emit(eventName, payload)
+    }
+
+    fun notifyLog(message: String) { emitEvent("onLog", message)}
 }

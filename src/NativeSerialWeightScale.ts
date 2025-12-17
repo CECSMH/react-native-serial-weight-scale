@@ -1,6 +1,6 @@
 import type { TurboModule } from 'react-native';
 import { TurboModuleRegistry } from 'react-native';
-import type { EventEmitter } from 'react-native/Libraries/Types/CodegenTypes';
+
 export interface Spec extends TurboModule {
   listDevices(): Promise<Array<{
     name: string,
@@ -31,40 +31,44 @@ export interface Spec extends TurboModule {
 
   disconnectAll(): Promise<void>;
 
-  readonly onDeviceConnected: EventEmitter<{
-    name: string,
-    vendorId: number,
-    productId: number,
-    port: string,
-    hasPermission: boolean
-  }>
+  setOnDeviceConnected(callback: (event: {
+    name: string;
+    vendorId: number;
+    productId: number;
+    port: string;
+    hasPermission: boolean;
+  }) => void): void;
 
-  readonly onDeviceAttached: EventEmitter<{
-    name: string,
-    vendorId: number,
-    productId: number,
-    port: string,
-    hasPermission: boolean
-  }>
+  setOnDeviceAttached(callback: (event: {
+    name: string;
+    vendorId: number;
+    productId: number;
+    port: string;
+    hasPermission: boolean;
+  }) => void): void;
 
-  readonly onDeviceDisconnected: EventEmitter<{
-    name: string,
-    vendorId: number,
-    productId: number,
-    port: string,
-    hasPermission: boolean
-  }>
+  setOnDeviceDisconnected(callback: (event: {
+    name: string;
+    vendorId: number;
+    productId: number;
+    port: string;
+    hasPermission: boolean;
+  }) => void): void;
 
-  readonly onDeviceDetached: EventEmitter<{
-    name: string,
-    vendorId: number,
-    productId: number,
-    port: string,
-    hasPermission: boolean
-  }>
+  setOnDeviceDetached(callback: (event: {
+    name: string;
+    vendorId: number;
+    productId: number;
+    port: string;
+    hasPermission: boolean;
+  }) => void): void;
 
-  readonly onWeightUpdate: EventEmitter<{ productId: number; result: { weight?: number; error?: string } }>;
-  readonly onLog: EventEmitter<string>;
+  setOnWeightUpdate(callback: (event: {
+    productId: number;
+    result: { weight?: number; error?: string };
+  }) => void): void;
+
+  setOnLog(callback: (message: string) => void): void;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('SerialWeightScale');

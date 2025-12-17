@@ -10,26 +10,26 @@ const disconnected_listeners: any = {};
 const attached_listeners: any = {};
 const detached_listeners: any = {};
 
-ScaleModule.onLog((msg: string) => console.log(msg));
+ScaleModule.setOnLog((msg: string) => console.log(msg));
 
-ScaleModule.onWeightUpdate(({ productId, result }) => {
+ScaleModule.setOnWeightUpdate(({ productId, result }) => {
     monitoring_weight_listeners[`monitoring_${productId}`]?.call(null, result);
 });
 
-ScaleModule.onDeviceAttached((device) => {
+ScaleModule.setOnDeviceAttached((device) => {
     attached_listeners[`evt_${device.productId}`]?.call(null, device);
 });
 
-ScaleModule.onDeviceConnected((device) => {
+ScaleModule.setOnDeviceConnected((device) => {
     connected_listeners[`evt_${device.productId}`]?.call(null, device);
 });
 
-ScaleModule.onDeviceDisconnected((device) => {
+ScaleModule.setOnDeviceDisconnected((device) => {
     disconnected_listeners[`evt_${device.productId}`]?.call(null, device);
     delete monitoring_weight_listeners[`evt_${device.productId}`];
 });
 
-ScaleModule.onDeviceDetached((device) => {
+ScaleModule.setOnDeviceDetached((device) => {
     detached_listeners[`evt_${device.productId}`]?.call(null, device);
 });
 

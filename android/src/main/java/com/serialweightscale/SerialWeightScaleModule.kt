@@ -4,6 +4,7 @@ import com.facebook.react.bridge.*
 import android.content.IntentFilter
 import android.hardware.usb.UsbManager
 import com.facebook.react.modules.core.DeviceEventManagerModule
+import com.facebook.react.bridge.Callback;
 import com.facebook.react.turbomodule.core.interfaces.TurboModule
 import com.serialweightscale.exceptions.*
 import com.serialweightscale.handlers.*
@@ -20,10 +21,19 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
     private val handlers = ConcurrentHashMap<Int, Handler>()
     private val monitoringJobs = ConcurrentHashMap<Int, Job>()
     private val coroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    
+    
+    private var onDeviceConnected: Callback? = null
+    private var onDeviceAttached: Callback? = null
+    private var onDeviceDisconnected: Callback? = null
+    private var onDeviceDetached: Callback? = null
+    private var onWeightUpdate: Callback? = null
+    private var onLog: Callback? = null
+
 
     init {
         ContextHolder.setContext(reactApplicationContext)
-        Logger.setJsEmitter(::emitOnLog)
+        Logger.setJsEmitter(::notifyLog)
 
         val intentFilter = IntentFilter().apply {
             addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED)
@@ -60,7 +70,7 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
 
                 handler.connect(_productId, config) 
                 handlers[_productId] = handler
-                emitOnDeviceConnected(handler.getDevice().toMap())
+                onDeviceConnected?.invoke(handler.getDevice().toMap())
                 promise.resolve(null)
             } catch (e: ScaleException) {
                 promise.reject(e.getType(), e.message)
@@ -161,20 +171,21 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
     }
 
     fun onDeviceAttached(device: Device){
-        emitOnDeviceAttached(device.toMap())
+        onDeviceAttached?.invoke(device.toMap())
     }
 
     fun onDeviceDetached(device: Device){
         try{
             disconnect(device.productId)
         }catch(e: Exception){}
-        emitOnDeviceDetached(device.toMap())
+        onDeviceDetached?.invoke(device.toMap())
     }
 
     private fun disconnect(productId: Int) {
         val handler = handlers.remove(productId) ?: throw InvalidScaleIdException("Unknown scale ID: $productId", null)
         monitoringJobs.remove(productId)?.cancel()
-        emitOnDeviceDisconnected(handler.getDevice().toMap())
+
+        onDeviceDisconnected?.invoke(handler.getDevice().toMap())
         handler.disconnect()
     }
 
@@ -183,6 +194,15 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
             putInt("productId", productId)
             putMap("result", result)
         }
-        emitOnWeightUpdate(event)
+        onWeightUpdate?.invoke(map)
     }
+
+    fun notifyLog(message: String) { onLog?.invoke(message)}
+    
+    override fun setOnDeviceAttached(callback: Callback) {onDeviceAttached = callback}
+    override fun setOnDeviceConnected(callback: Callback) {onDeviceConnected = callback}
+    override fun setOnDeviceDisconnected(callback: Callback) {onDeviceDisconnected = callback}
+    override fun setOnDeviceDetached(callback: Callback) {onDeviceDetached = callback}
+    override fun setOnWeightUpdate(callback: Callback) {onWeightUpdate = callback}
+    override fun setOnLog(callback: Callback) {onLog = callback}
 }

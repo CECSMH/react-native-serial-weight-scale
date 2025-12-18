@@ -178,7 +178,7 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
         try{
             disconnect(device.productId)
         }catch(e: Exception){}
-        emitEvent("onDeviceDetached", device().toMap())
+        emitEvent("onDeviceDetached", device.toMap())
     }
 
     private fun disconnect(productId: Int) {

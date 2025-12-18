@@ -8,7 +8,7 @@ class UranoHandler(model: String?) : BaseHandler("urano", model ?: "urano") {
     override fun getCommand(): String = if (_model == "uranoudc") Constants.EOT else Constants.ENQ
 
     override fun connect(productId: Int, config: Config) {
-        if (isConnected) return
+        if (is_connected) return
         super.connect(productId, config)
 
         SerialUtils.send(serialPort!!, Constants.EOT)

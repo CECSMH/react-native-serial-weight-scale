@@ -8,6 +8,7 @@ interface Handler {
     val model: String?
     fun getDevice(): Device
     fun connect(productId: Int, config: Config)
+    fun isConnected(): Boolean
     suspend fun readWeight(): Double
     suspend fun readWeight(timeout: Int): Double
     fun monitorWeight(): Sequence<Double>

@@ -197,6 +197,10 @@ constructor(productId: number, config: Config)
   - Connects to the scale.
   - **Throws**: `ScaleError` (e.g., type: `serial_connection`).
 
+- `isConnected(): boolean`
+
+  - Check scale is connected
+
 - `readWeight(): Promise<number>`
 
   - Reads the current weight.

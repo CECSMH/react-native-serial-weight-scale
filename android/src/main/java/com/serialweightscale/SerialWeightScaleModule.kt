@@ -42,7 +42,7 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
 
     override fun isConnected(productId: Double): Boolean {
         val _productId = productId.toInt() 
-        return handlers[_productId]?.isConnected ?: false
+        return handlers[_productId]?.isConnected() ?: false
     }
 
     override fun listDevices(promise: Promise) {
@@ -60,6 +60,10 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
     override fun connect(productId: Double, configMap: ReadableMap, promise: Promise) {
         coroutineScope.launch{
             try {
+                if(isConnected(productId)){
+                    promise.resolve(null)
+                    return@launch;
+                };
                 val _productId = productId.toInt() 
                 val config = Config.fromMap(configMap)
                 val handler = HandlerFactory.create(config.brand, config.model)
@@ -174,7 +178,7 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
         try{
             disconnect(device.productId)
         }catch(e: Exception){}
-        emitEvent("onDeviceDetached", handler.getDevice().toMap())
+        emitEvent("onDeviceDetached", device().toMap())
     }
 
     private fun disconnect(productId: Int) {
@@ -199,5 +203,5 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
             .emit(eventName, payload)
     }
 
-    fun notifyLog(message: String) { emitEvent("onLog", message)}
+    fun notifyLog(message: String) { emitEvent("onLog", Arguments.createMap().apply {putString("weight_scale_log", "message") })}
 }

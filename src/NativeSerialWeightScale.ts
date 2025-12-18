@@ -32,45 +32,6 @@ export interface Spec extends TurboModule {
   disconnect(productId: number): Promise<void>;
 
   disconnectAll(): Promise<void>;
-
-  setOnDeviceConnected(callback: (event: {
-    name: string;
-    vendorId: number;
-    productId: number;
-    port: string;
-    hasPermission: boolean;
-  }) => void): void;
-
-  setOnDeviceAttached(callback: (event: {
-    name: string;
-    vendorId: number;
-    productId: number;
-    port: string;
-    hasPermission: boolean;
-  }) => void): void;
-
-  setOnDeviceDisconnected(callback: (event: {
-    name: string;
-    vendorId: number;
-    productId: number;
-    port: string;
-    hasPermission: boolean;
-  }) => void): void;
-
-  setOnDeviceDetached(callback: (event: {
-    name: string;
-    vendorId: number;
-    productId: number;
-    port: string;
-    hasPermission: boolean;
-  }) => void): void;
-
-  setOnWeightUpdate(callback: (event: {
-    productId: number;
-    result: { weight?: number; error?: string };
-  }) => void): void;
-
-  setOnLog(callback: (message: string) => void): void;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('SerialWeightScale');

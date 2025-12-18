@@ -10,7 +10,9 @@ abstract class BaseHandler(override val brand: String, override val model: Strin
     protected var retries: Int = 0
     protected var last_response: String = ""
     
-    val isConnected: Boolean get() = serialPort?.isOpen ?: false
+    val is_connected: Boolean get() = serialPort?.isOpen ?: false
+
+    override fun isConnected(): Boolean { return is_connected }
 
     override fun getDevice(): Device = Device(
         name = serialPort!!.device.deviceName,
@@ -21,7 +23,7 @@ abstract class BaseHandler(override val brand: String, override val model: Strin
     )
 
     override fun connect(productId: Int, config: Config) {
-        if (isConnected) return
+        if (is_connected) return
         timeout = config.timeout ?: 500
         retries = config.retries ?: 0
         serialPort = SerialUtils.openPort(
@@ -41,14 +43,14 @@ abstract class BaseHandler(override val brand: String, override val model: Strin
     }
 
     protected fun sendCommand(command: String?) {
-        if (!isConnected) throw SerialConnectionException("Not connected", null)
+        if (!is_connected) throw SerialConnectionException("Not connected", null)
         command?.let {
             SerialUtils.send(serialPort!!, it)
         }
     }
 
     protected fun readResponse(timeout: Int): String {
-        if (!isConnected) throw SerialConnectionException("Not connected", null)
+        if (!is_connected) throw SerialConnectionException("Not connected", null)
         val response = SerialUtils.read(serialPort!!, timeout)
      
         if (response.isNullOrEmpty()) throw TimeoutException("No response received", null)
@@ -83,7 +85,7 @@ abstract class BaseHandler(override val brand: String, override val model: Strin
     }
 
     override fun monitorWeight(): Sequence<Double> = sequence {
-        while (isConnected) {
+        while (is_connected) {
             try {
                 val weight = runBlocking{readWeight(50)}
                 yield(weight)

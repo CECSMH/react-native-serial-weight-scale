@@ -1,10 +1,9 @@
 import NativeSerialWeightScale from '../NativeSerialWeightScale';
 
+import { NativeEventEmitter } from 'react-native';
 import type { Config, Device, ScaleResult } from './types';
-import { NativeEventEmitter, NativeModules } from 'react-native';
 
-const { SerialWeightScale } = NativeModules;
-const emitter = new NativeEventEmitter(SerialWeightScale);
+const emitter = new NativeEventEmitter();
 
 const ScaleModule = NativeSerialWeightScale;
 
@@ -14,7 +13,7 @@ const disconnected_listeners: any = {};
 const attached_listeners: any = {};
 const detached_listeners: any = {};
 
-emitter.addListener('onLog', (msg: string) => { console.log(msg) });
+emitter.addListener('onLog', (msg: any) => { console.log(msg?.weight_scale_log); });
 
 emitter.addListener('onWeightUpdate', ({ productId, result }) => {
     monitoring_weight_listeners[`monitoring_${productId}`]?.call(null, result);

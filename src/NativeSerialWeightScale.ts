@@ -21,6 +21,8 @@ export interface Spec extends TurboModule {
     model?: string
   }): Promise<void>;
 
+  isConnected(productId: number): boolean;
+
   readWeight(productId: number): Promise<{ weight: number }>;
 
   startMonitoringWeight(productId: number): Promise<void>;

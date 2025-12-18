@@ -1,3 +1,4 @@
+import NativeSerialWeightScale from '../NativeSerialWeightScale';
 
 import type { Config, Device, ScaleResult } from './types';
 import { NativeEventEmitter, NativeModules } from 'react-native';
@@ -5,7 +6,7 @@ import { NativeEventEmitter, NativeModules } from 'react-native';
 const { SerialWeightScale } = NativeModules;
 const emitter = new NativeEventEmitter(SerialWeightScale);
 
-const ScaleModule = SerialWeightScale;
+const ScaleModule = NativeSerialWeightScale;
 
 const monitoring_weight_listeners: any = {};
 const connected_listeners: any = {};
@@ -13,30 +14,33 @@ const disconnected_listeners: any = {};
 const attached_listeners: any = {};
 const detached_listeners: any = {};
 
-emitter.addListener('onLog', (msg: string) => {console.log(msg);});
+emitter.addListener('onLog', (msg: string) => { console.log(msg) });
 
 emitter.addListener('onWeightUpdate', ({ productId, result }) => {
-  monitoring_weight_listeners[`monitoring_${productId}`]?.call(null, result);
+    monitoring_weight_listeners[`monitoring_${productId}`]?.call(null, result);
 });
 
 emitter.addListener('onDeviceAttached', (device) => {
-  attached_listeners[`evt_${device.productId}`]?.call(null, device);
+    attached_listeners[`evt_${device.productId}`]?.call(null, device);
 });
 
 emitter.addListener('onDeviceConnected', (device) => {
-  connected_listeners[`evt_${device.productId}`]?.call(null, device);
+    connected_listeners[`evt_${device.productId}`]?.call(null, device);
 });
 
 emitter.addListener('onDeviceDisconnected', (device) => {
-  disconnected_listeners[`evt_${device.productId}`]?.call(null, device);
-  delete monitoring_weight_listeners[`evt_${device.productId}`];
+    disconnected_listeners[`evt_${device.productId}`]?.call(null, device);
+    delete monitoring_weight_listeners[`evt_${device.productId}`];
 });
 
 emitter.addListener('onDeviceDetached', (device) => {
-  detached_listeners[`evt_${device.productId}`]?.call(null, device);
+    detached_listeners[`evt_${device.productId}`]?.call(null, device);
 });
 
 export default {
+    isConnected(productId: number): boolean {
+        return ScaleModule.isConnected(productId);
+    },
     listDevices(): Promise<Device[]> {
         return ScaleModule.listDevices();
     },
@@ -51,7 +55,7 @@ export default {
         ScaleModule.startMonitoringWeight(productId);
 
         return () => {
-           this.stopMonitorWeight(productId);
+            this.stopMonitorWeight(productId);
         };
     },
     stopMonitorWeight(productId: number) {

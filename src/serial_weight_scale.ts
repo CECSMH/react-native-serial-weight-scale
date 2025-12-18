@@ -45,6 +45,10 @@ class SerialWeightScale {
         }
     }
 
+    isConnected(): Boolean {
+        return scale_module.isConnected(this.productId)
+    }
+
     /**
      * Lê o peso atual da balança.
      *

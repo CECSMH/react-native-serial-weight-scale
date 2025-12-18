@@ -40,6 +40,11 @@ class SerialWeightScaleModule(reactContext: ReactApplicationContext) :NativeSeri
 
     override fun getName(): String = NAME
 
+    override fun isConnected(productId: Double): Boolean {
+        val _productId = productId.toInt() 
+        return handlers[_productId]?.isConnected ?: false
+    }
+
     override fun listDevices(promise: Promise) {
         try {
             val devices = SerialUtils.listDevices()

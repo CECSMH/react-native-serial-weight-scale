@@ -1,6 +1,9 @@
 # react-native-serial-weight-scale
 
 A React Native module for interfacing with serial weight scales. This library provides a TypeScript-compatible API to connect, read, monitor, and manage serial weight scales.
+[![npm version](https://badge.fury.io/js/react-native-serial-weight-scale.svg)](https://badge.fury.io/js/react-native-serial-weight-scale) 
+[![Platform](https://img.shields.io/badge/platform-Android-yellow.svg)](https://www.android.com)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 ## Features
 
